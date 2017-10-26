@@ -23,7 +23,7 @@ persistir o = do
     writeFile archivo . show $ o
     return ()
 
-cargar :: IO Oraculo
+cargar :: IO (Maybe Oraculo)
 cargar = do
     putStrLn ""
     putStrLn "Escriba el nombre del archivo:"
@@ -36,15 +36,20 @@ cargar = do
             putStrLn "Leyendo el archivo..."
             contents <- readFile archivo
             let o = read contents :: Oraculo
-            return o
+            return (Just o)
         else do 
             putStrLn "El archivo no existe"
             putStrLn "¿Estas Seguro que escribiste bien el nombre?"
             putStrLn "Vuelve a intentar"
             putStrLn ""
-            return . crearOraculo $ ""
+            return Nothing
 
--- insertarPregunta 
+-- insertarPregunta :: Oraculo -> Oraculo -> String -> Oraculo
+-- insertarPregunta pregunta (Prediccion p) ps
+--                 | p == ps = pregunta
+--                 | otherwise = Prediccion p
+
+-- insertarPregunta pregunta () 
 
 -- predecir :: Oraculo -> IO Oraculo
 -- predecir (Prediccion ps) = do
@@ -70,8 +75,8 @@ cargar = do
 
 
 
-pedirOpcion :: Oraculo -> IO ()
-pedirOpcion o = do
+pedirOpcion :: Maybe Oraculo -> IO ()
+pedirOpcion oraculo = do
 
     let opciones = ["######################## Menu ########################",
                     "# Escriba el número de la opción que desea ejecutar: #",
@@ -90,24 +95,37 @@ pedirOpcion o = do
     case opcion of
          "1" -> do
             o <- pedirNuevaPrediccion
-            pedirOpcion o
+            putStrLn "¡Se ha inicializado el oráculo satisfactoriamente!"
+            putStrLn ""
+            pedirOpcion (Just o)
          "2" -> do
             putStrLn "Aqui se ejecuta funcion de opcion 2"
-            pedirOpcion o
+            pedirOpcion oraculo
          "3" -> do
-            persistir o
-            putStrLn "¡Se ha guardado el oráculo en el archivo correctamente!"
-            putStrLn ""
-            pedirOpcion o
+            case oraculo of
+                 Nothing -> do
+                    putStrLn ""
+                    putStrLn "Lo siento, no ha inicializado ningun oráculo."
+                    putStrLn "Prueba crear uno nuevo con la opción 1 o cargar uno "
+                    putStrLn "existente con la opcion 4"
+                    putStrLn ""
+                    pedirOpcion Nothing
+                 Just o -> do
+                    persistir o
+                    putStrLn "¡Se ha guardado el oráculo en el archivo correctamente!"
+                    putStrLn ""
+                    pedirOpcion (Just o)
          "4" -> do
-            o <- cargar
-            print o
-            putStrLn "¡Se ha leido el oráculo en el archivo correctamente"
-            putStrLn ""
-            pedirOpcion o
+            oraculo <- cargar
+            case oraculo of
+                Nothing -> pedirOpcion oraculo
+                Just _ -> do
+                     putStrLn "¡Se ha leido el oráculo en el archivo correctamente"
+                     putStrLn ""
+                     pedirOpcion oraculo
          "5" -> do
             putStrLn "Aqui se ejecuta funcion de opcion 5"
-            pedirOpcion o
+            pedirOpcion oraculo
          "6" -> do
             putStrLn ""
             putStrLn "¡Gracias por jugar! Hasta Pronto."
@@ -115,13 +133,12 @@ pedirOpcion o = do
             return ()
          _ -> do
             putStrLn ""
-            putStrLn "Ha escogido una opción no valida. Intente de nuevo."
+            putStrLn "Ha escogido una opción no válida. Intente de nuevo."
             putStrLn ""
-            pedirOpcion o
+            pedirOpcion oraculo
 
 
 main = do
     putStrLn "¡Bienvenido a Haskinator!"
     putStrLn ""
-    let o = crearOraculo ""
-    pedirOpcion o
+    pedirOpcion Nothing
