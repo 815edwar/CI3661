@@ -1,13 +1,14 @@
 import System.IO
 import System.Directory
 import Data.Char
+import qualified Data.Map as M
 import Control.Monad
+import Data.Either
 import Oraculo
 
 pedirNuevaPrediccion :: IO Oraculo
 pedirNuevaPrediccion = do
-    putStrLn ""
-    putStrLn "Escriba la predicción del nuevo oráculo:"
+    putStrLn "\nEscriba la predicción del nuevo oráculo:"
     prediccion <- getLine
     putStrLn ""
     let o = crearOraculo prediccion
@@ -15,21 +16,17 @@ pedirNuevaPrediccion = do
 
 persistir :: Oraculo -> IO ()
 persistir o = do
-    putStrLn ""
-    putStrLn "Escriba el nombre del archivo:"
+    putStrLn "\nEscriba el nombre del archivo:"
     archivo <- getLine
-    putStrLn ""
-    putStrLn "Escribiendo el archivo..."
+    putStrLn "\nEscribiendo el archivo..."
     writeFile archivo . show $ o
     return ()
 
 cargar :: IO (Maybe Oraculo)
 cargar = do
-    putStrLn ""
-    putStrLn "Escriba el nombre del archivo:"
+    putStrLn "\nEscriba el nombre del archivo:"
     archivo <- getLine
-    putStrLn ""
-    putStrLn "Abriendo el archivo..."
+    putStrLn "\nAbriendo el archivo..."
     fileExists <- doesFileExist archivo
     if fileExists
        then do 
@@ -40,9 +37,67 @@ cargar = do
         else do 
             putStrLn "El archivo no existe"
             putStrLn "¿Estas Seguro que escribiste bien el nombre?"
-            putStrLn "Vuelve a intentar"
-            putStrLn ""
+            putStrLn "Vuelve a intentar\n"
             return Nothing
+
+preguntaCrucial :: Oraculo -> IO ()
+preguntaCrucial oraculo = do
+    let instr = ["\nOh, ¡esta opción es interesante!",
+                 "Necesitare las dos predicciones a las que quieres averiguar",
+                 "su pregunta crucial.", 
+                 "\nEscribe la primera prediccion: "]
+    mapM_ putStrLn instr
+    pred1 <- getLine
+    putStrLn "\nEscribe la segunda prediccion: "
+    pred2 <- getLine
+
+    case buscarLCA pred1 pred2 oraculo of 
+        Right _ -> do
+            let msj = ["\nLo siento. Esta consulta no es válida.",
+                       "\nNo tengo conocimiento de alguna de las predicciones.",
+                       "\nQuiza deberias seguir jugando para aprender mas sobre",
+                       "las cosas que conoces. \n"]
+            mapM_ putStrLn msj
+            return ()
+        Left datos -> do
+            let msj = ["\nHmm... He encontrado la pregunta crucial de las",
+                       "predicciones que consultaste.\n",
+                       "La pregunta crucial es: "]
+            mapM_ putStrLn msj
+            putStrLn (datos !! 0)
+            -- let msj2 = ["La opción que lleva a ",
+            --             pred1,
+            --             " es: "]
+            -- mapM_ putStr msj2 
+            -- putStrLn (datos !! 1)
+            -- let msj3 = ["La opción que lleva a ",
+            --             pred2,
+            --             " es: "]
+            -- mapM_ putStr msj3 
+            -- putStrLn (datos !! 2)
+            putStrLn ""
+            return ()
+
+buscarLCA :: String -> String -> Oraculo -> Either [String] [Bool]
+buscarLCA pred1 pred2 (Prediccion ps)
+    | ps == pred1 = Right [True, False]
+    | ps == pred2 = Right [False, True]
+    | otherwise = Right [False, False]
+buscarLCA pred1 pred2 oraculo = do
+    let resp = map (buscarLCA pred1 pred2) (M.elems . opciones $ oraculo) 
+        groupResp = partitionEithers resp
+
+    case length . fst $ groupResp of
+        0 -> do
+            let trues = filter (\elem -> or elem) (snd groupResp)
+            case length trues of
+                0 -> Right [False, False]
+                1 -> Right (head trues)
+                _ -> Left [pregunta oraculo]
+        _ -> Left (head . fst $ groupResp )
+
+
+
 
 -- insertarPregunta :: Oraculo -> Oraculo -> String -> Oraculo
 -- insertarPregunta pregunta (Prediccion p) ps
@@ -72,8 +127,63 @@ cargar = do
 --             opcion2 <- getLine
 --             let qs = ramificar [opcion1, opcion2] 
 
+predecir :: Oraculo -> IO Oraculo
+predecir o@(Prediccion ps) = do
+    let msj = ["Estoy pensando en...",
+               ps,
+               "¿Estoy en lo correcto?",
+               "Si es así escribe si, de lo contrario escribe no."]
+    mapM_ putStrLn msj
+    resp <- getLine
 
-
+    case resp of
+         "si" -> do
+            putStrLn ""
+            putStrLn "¡Sí! He triunfado."
+            return o
+         "no" -> do
+            putStrLn "¡Vaya! Me he equivocado. "
+            putStrLn "¿Cuál es la predicción correcta?"
+            prediccion <- getLine
+            let o' = Prediccion prediccion
+            putStrLn ("¿Qué pregunta lo distingue de " ++ ps ++ "?")
+            pregunta <- getLine
+            putStrLn ("¿Cuál es la respuesta que lleva a " ++ prediccion ++ "?")
+            opcion1 <- getLine
+            putStrLn ("¿Cuál es la respuesta que lleva a " ++ ps ++ "?")
+            opcion2 <- getLine
+            let nuevoOra = ramificar [opcion2, opcion1] [o, o'] pregunta
+            return nuevoOra
+         _ -> do
+            putStrLn "Escribiste una opción incorrecta, vuelve a intentarlo."
+            return o
+predecir o@(Pregunta qs os) = do
+    putStrLn qs  
+    mapM_ putStr (map (++" / ") (M.keys (opciones(o)))) 
+    putStrLn " ninguna"
+    resp <- getLine
+    
+    case resp of
+        "ninguna" -> do
+            putStrLn "¡Vaya!... ¿Qué opción esperabas?"
+            opcion <- getLine
+            putStrLn "Ya que no sabía de la existencia de esa opción, ¿podrías decirme en qué pensaste?"
+            ps <- getLine
+            let predNueva = Prediccion ps 
+                listaOp = opcion:(M.keys(opciones (o)))
+                predicciones = predNueva:(M.elems(opciones (o)))
+                nuevoOra = ramificar (listaOp) (predicciones) qs 
+            return nuevoOra
+        _ -> do 
+            if not (resp `elem` M.keys(opciones (o))) 
+                then do 
+                    putStrLn "Lo que introduciste no es una opción válida. Vuelve a intentar"
+                    return o
+            else do 
+                nuevoOra <- predecir (respuesta(o) resp)
+                let listaOp = M.insert resp nuevoOra os
+                    oraculoNuevo = Pregunta qs listaOp
+                return oraculoNuevo
 
 pedirOpcion :: Maybe Oraculo -> IO ()
 pedirOpcion oraculo = do
@@ -95,50 +205,64 @@ pedirOpcion oraculo = do
     case opcion of
          "1" -> do
             o <- pedirNuevaPrediccion
-            putStrLn "¡Se ha inicializado el oráculo satisfactoriamente!"
-            putStrLn ""
+            putStrLn "¡Se ha inicializado el oráculo satisfactoriamente!\n"
             pedirOpcion (Just o)
          "2" -> do
-            putStrLn "Aqui se ejecuta funcion de opcion 2"
-            pedirOpcion oraculo
+            case oraculo of
+                Nothing -> do
+                    let error = ["",
+                                 "Lo siento, no ha inicializado ningun oráculo.",
+                                 "Prueba crear uno nuevo con la opción 1 o cargar uno ",
+                                 "existente con la opcion 4",
+                                 ""]
+                    mapM_ putStrLn error
+                    pedirOpcion Nothing
+                Just o -> do
+                    o' <- predecir o
+                    putStrLn ""
+                    pedirOpcion (Just o')
          "3" -> do
             case oraculo of
                  Nothing -> do
-                    putStrLn ""
-                    putStrLn "Lo siento, no ha inicializado ningun oráculo."
-                    putStrLn "Prueba crear uno nuevo con la opción 1 o cargar uno "
-                    putStrLn "existente con la opcion 4"
-                    putStrLn ""
+                    let error = ["",
+                                 "Lo siento, no ha inicializado ningun oráculo.",
+                                 "Prueba crear uno nuevo con la opción 1 o cargar uno ",
+                                 "existente con la opcion 4",
+                                 ""]
+                    mapM_ putStrLn error
                     pedirOpcion Nothing
                  Just o -> do
                     persistir o
-                    putStrLn "¡Se ha guardado el oráculo en el archivo correctamente!"
-                    putStrLn ""
+                    putStrLn "¡Se ha guardado el oráculo en el archivo correctamente!\n"
                     pedirOpcion (Just o)
          "4" -> do
             oraculo <- cargar
             case oraculo of
                 Nothing -> pedirOpcion oraculo
                 Just _ -> do
-                     putStrLn "¡Se ha leido el oráculo en el archivo correctamente"
-                     putStrLn ""
+                     putStrLn "¡Se ha leido el oráculo en el archivo correctamente\n"
                      pedirOpcion oraculo
          "5" -> do
-            putStrLn "Aqui se ejecuta funcion de opcion 5"
-            pedirOpcion oraculo
+            case oraculo of
+                Nothing -> do
+                    let error = ["",
+                                 "Lo siento, no ha inicializado ningun oráculo.",
+                                 "Prueba crear uno nuevo con la opción 1 o cargar uno ",
+                                 "existente con la opcion 4",
+                                 ""]
+                    mapM_ putStrLn error
+                    pedirOpcion Nothing
+                Just o -> do
+                    preguntaCrucial o
+                    pedirOpcion oraculo
          "6" -> do
-            putStrLn ""
-            putStrLn "¡Gracias por jugar! Hasta Pronto."
-            putStrLn ""
+            putStrLn "\n¡Gracias por jugar! Hasta Pronto.\n"
             return ()
          _ -> do
-            putStrLn ""
-            putStrLn "Ha escogido una opción no válida. Intente de nuevo."
-            putStrLn ""
+            putStrLn "\nHa escogido una opción no válida. Intente de nuevo.\n"
             pedirOpcion oraculo
 
 
 main = do
-    putStrLn "¡Bienvenido a Haskinator!"
-    putStrLn ""
+    putStrLn "¡Bienvenido a Haskinator!\n"
     pedirOpcion Nothing

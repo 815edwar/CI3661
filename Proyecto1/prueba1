@@ -1,0 +1,1 @@
+Pregunta "Es moreno?" (fromList [("no",Pregunta "Es hombre?" (fromList [("no",Prediccion "Marilyn"),("si",Pregunta "Estudia en la usb" (fromList [("no",Prediccion "Leopoldo"),("si",Prediccion "Domingo")]))])),("si",Pregunta "Es mujer?" (fromList [("no",Prediccion "Edwar"),("si",Prediccion "Krisbel")]))])
