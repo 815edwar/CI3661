@@ -6,6 +6,8 @@ import Control.Monad
 import Data.Either
 import Oraculo
 
+-- Función que pide al usuario un String y retorna un nuevo oráculo con el
+-- String como nueva predicción.
 pedirNuevaPrediccion :: IO Oraculo
 pedirNuevaPrediccion = do
     putStrLn "\nEscriba la predicción del nuevo oráculo:"
@@ -14,6 +16,9 @@ pedirNuevaPrediccion = do
     let o = crearOraculo prediccion
     return o
 
+
+-- Función que recibe un oráculo, pide al usuario el nombre de un archivo 
+-- y escribe en el el oráculo.
 persistir :: Oraculo -> IO ()
 persistir o = do
     putStrLn "\nEscriba el nombre del archivo:"
@@ -22,6 +27,10 @@ persistir o = do
     writeFile archivo . show $ o
     return ()
 
+
+-- Función que pide al usuario el nombre de un archivo. Si el archivo existe
+-- crea un nuevo oráculo a partir de la información recibida del archivo de
+-- texto. 
 cargar :: IO (Maybe Oraculo)
 cargar = do
     putStrLn "\nEscriba el nombre del archivo:"
@@ -62,19 +71,19 @@ preguntaCrucial oraculo = do
         Left datos -> do
             let msj = ["\nHmm... He encontrado la pregunta crucial de las",
                        "predicciones que consultaste.\n",
-                       "La pregunta crucial es: "]
-            mapM_ putStrLn msj
+                       "\nLa pregunta crucial es: "]
+            mapM_ putStr msj
             putStrLn (datos !! 0)
-            -- let msj2 = ["La opción que lleva a ",
-            --             pred1,
-            --             " es: "]
-            -- mapM_ putStr msj2 
-            -- putStrLn (datos !! 1)
-            -- let msj3 = ["La opción que lleva a ",
-            --             pred2,
-            --             " es: "]
-            -- mapM_ putStr msj3 
-            -- putStrLn (datos !! 2)
+            let msj2 = ["La opción que lleva a ",
+                        pred1,
+                        " es: "]
+            mapM_ putStr msj2 
+            putStrLn (datos !! 1)
+            let msj3 = ["La opción que lleva a ",
+                        pred2,
+                        " es: "]
+            mapM_ putStr msj3 
+            putStrLn (datos !! 2)
             putStrLn ""
             return ()
 
@@ -84,17 +93,25 @@ buscarLCA pred1 pred2 (Prediccion ps)
     | ps == pred2 = Right [False, True]
     | otherwise = Right [False, False]
 buscarLCA pred1 pred2 oraculo = do
-    let resp = map (buscarLCA pred1 pred2) (M.elems . opciones $ oraculo) 
-        groupResp = partitionEithers resp
+    let lefts = filter (\(_, elem) -> isLeft elem)
+        rights = filter (\(_, elem) -> isRight elem)
+        lefts' xs = map (\(op, elem) -> (op, fromLeft [] elem)) (lefts xs)
+        rights' xs = map (\(op, elem) -> (op, fromRight [] elem)) (rights xs)
+        partitionEithers xs = (lefts' xs, rights' xs)
+        resp = map (\(op, o) -> (op, buscarLCA pred1 pred2 o)) (M.toList . opciones $ oraculo) 
+        partition = partitionEithers resp
 
-    case length . fst $ groupResp of
+    case length . fst $ partition of
         0 -> do
-            let trues = filter (\elem -> or elem) (snd groupResp)
+            let trues = filter (\(_, elem) -> or elem) (snd partition)
             case length trues of
                 0 -> Right [False, False]
-                1 -> Right (head trues)
-                _ -> Left [pregunta oraculo]
-        _ -> Left (head . fst $ groupResp )
+                1 -> Right (snd . head $ trues)
+                _ -> do
+                    if (snd . head $ trues) == [True, False] 
+                    then Left [pregunta oraculo, fst . head $ trues, fst . last $ trues]
+                    else Left [pregunta oraculo, fst . last $ trues, fst . head $ trues]
+        _ -> Left (snd . head . fst $ partition)
 
 
 
