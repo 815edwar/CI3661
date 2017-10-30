@@ -22,7 +22,7 @@ pedirNuevaPrediccion = do
 
 
 -- Función que recibe un oráculo, pide al usuario el nombre de un archivo 
--- y escribe en el el oráculo.
+-- y escribe en él el oráculo.
 persistir :: Oraculo -> IO ()
 persistir o = do
     putStrLn "\nEscriba el nombre del archivo:"
@@ -34,7 +34,7 @@ persistir o = do
 
 -- Función que pide al usuario el nombre de un archivo. Si el archivo existe
 -- crea un nuevo oráculo a partir de la información recibida del archivo de
--- texto. En caso contrario, devuelve Nothing
+-- texto. En caso contrario, devuelve Nothing.
 cargar :: IO (Maybe Oraculo)
 cargar = do
     putStrLn "\nEscriba el nombre del archivo:"
@@ -49,13 +49,13 @@ cargar = do
             return (Just o)
         else do 
             putStrLn "El archivo no existe"
-            putStrLn "¿Estas Seguro que escribiste bien el nombre?"
+            putStrLn "¿Estas seguro que escribiste bien el nombre?"
             putStrLn "Vuelve a intentar\n"
             return Nothing
 
 -- Función que dado un oráculo, pide al usuario de dos String que sean
 -- predicciones del oráculo. Luego le dice al usuario cual es la pregunta
--- que llevaría a decidir eventualmente por una prediccion u otra. Asi
+-- que llevaría a decidir eventualmente por una prediccion u otra. Así
 -- como las opciones de respuesta correspondientes a cada una de las pre-
 -- dicciones involucradas.
 preguntaCrucial :: Oraculo -> IO ()
@@ -63,10 +63,10 @@ preguntaCrucial oraculo = do
     let instr = ["\nOh, ¡esta opción es interesante!",
                  "Necesitare las dos predicciones a las que quieres averiguar",
                  "su pregunta crucial.", 
-                 "\nEscribe la primera prediccion: "]
+                 "\nEscribe la primera predicción: "]
     mapM_ putStrLn instr
     pred1 <- getLine
-    putStrLn "\nEscribe la segunda prediccion: "
+    putStrLn "\nEscribe la segunda predicción: "
     pred2 <- getLine
 
     case buscarLCA pred1 pred2 oraculo of 
@@ -74,7 +74,7 @@ preguntaCrucial oraculo = do
             let msj = ["\nLo siento. Esta consulta no es válida.",
                        "\nNo tengo conocimiento de que es ",
                        if list == [True, False] then pred2 else pred1,
-                       "\nQuiza deberias seguir jugando para aprender mas sobre",
+                       "\nQuizás deberías seguir jugando para aprender más sobre",
                        " las cosas que conoces. \n\n"]
             mapM_ putStr msj
             return ()
@@ -97,15 +97,15 @@ preguntaCrucial oraculo = do
             putStrLn ""
             return ()
 
--- Dados dos String y un oráculo. Busca el ancestro comun mas bajo
+-- Dados dos String y un oráculo. Busca el ancestro común más bajo
 -- de las dos predicciones que representan los String. Devuelve
 -- Left [String] donde en la posición 0 se encuenta la pregunta que
 -- representa el LCA, en la posición 1 se encuentra la opción que 
--- corresponde al camino que lleva a la primera prediccion que se
--- paso de entrada y en la posición 2 la opción que corresponde al 
--- camino que lleva a la segunda predicción que se paso de entrada
+-- corresponde al camino que lleva a la primera predicción que se
+-- pasó de entrada y en la posición 2 la opción que corresponde al 
+-- camino que lleva a la segunda predicción que se pasó de entrada
 -- en caso de que se haya encontrado el LCA.
--- Devuelve Right [Bool] si no se encontro alguna predicción, en el
+-- Devuelve Right [Bool] si no se encontró alguna predicción, en el
 -- oráculo. En cuyo caso no encuetra el LCA.
 buscarLCA :: String -> String -> Oraculo -> Either [String] [Bool]
 buscarLCA pred1 pred2 (Prediccion ps)
@@ -134,12 +134,12 @@ buscarLCA pred1 pred2 oraculo = do
         _ -> Left (snd . head . fst $ partition)
 
 
--- Dado un oraculo, si es de tipo Prediccion, le escribe al usuario su prediccion y
--- pregunta si acerto, en caso afirmativo, celebra. Hace las preguntas necesarias 
--- para crear la nueva pregunta y retornarla.
+-- Dado un oráculo, si es de tipo Prediccion, le escribe al usuario su predicción y
+-- pregunta si acertó, en caso afirmativo, celebra. En caso negativo, hace las preguntas  
+-- necesarias para crear la nueva pregunta y retornarla.
 -- Si es de tipo Pregunta, muestra la pregunta y sus opciones al usuario y se va 
--- ṕor la opcion escogida por el ultimo. Luego de que reciba el oráculo de retorno
--- Lo pega a la opción y retorna.
+-- por la opción escogida por el último. Luego de que reciba el oráculo de retorno
+-- lo pega a la opción y retorna.
 predecir :: Oraculo -> IO Oraculo
 predecir o@(Prediccion ps) = do
     let msj = ["\nEstoy pensando en...",
@@ -199,13 +199,13 @@ predecir o@(Pregunta qs os) = do
                 return oraculoNuevo
 
 
--- Es una funcion recursiva que solo acaba si se elige la opción 6 del menu
--- de opciones. Se encarga de presentar el menu y pedir al usuario que escoja
+-- Es una funcion recursiva que sólo acaba si se elige la opción 6 del menu
+-- de opciones. Se encarga de presentar el menú y pedir al usuario que escoja
 -- una opción. Una vez elegida, se ejecuta la opción.
 pedirOpcion :: Maybe Oraculo -> IO ()
 pedirOpcion oraculo = do
 
-    let opciones = ["######################## Menu ########################",
+    let opciones = ["######################## Menú ########################",
                     "# Escriba el número de la opción que desea ejecutar: #",
                     "# 1.- Crear un oráculo nuevo.                        #", 
                     "# 2.- Predecir.                                      #",
@@ -230,7 +230,7 @@ pedirOpcion oraculo = do
                     let error = ["",
                                  "Lo siento, no ha inicializado ningun oráculo.",
                                  "Prueba crear uno nuevo con la opción 1 o cargar uno ",
-                                 "existente con la opcion 4",
+                                 "existente con la opción 4",
                                  ""]
                     mapM_ putStrLn error
                     pedirOpcion Nothing
@@ -244,7 +244,7 @@ pedirOpcion oraculo = do
                     let error = ["",
                                  "Lo siento, no ha inicializado ningun oráculo.",
                                  "Prueba crear uno nuevo con la opción 1 o cargar uno ",
-                                 "existente con la opcion 4",
+                                 "existente con la opción 4",
                                  ""]
                     mapM_ putStrLn error
                     pedirOpcion Nothing
@@ -265,7 +265,7 @@ pedirOpcion oraculo = do
                     let error = ["",
                                  "Lo siento, no ha inicializado ningun oráculo.",
                                  "Prueba crear uno nuevo con la opción 1 o cargar uno ",
-                                 "existente con la opcion 4",
+                                 "existente con la opción 4",
                                  ""]
                     mapM_ putStrLn error
                     pedirOpcion Nothing
