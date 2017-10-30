@@ -1,3 +1,6 @@
+module Haskinator 
+(main) where
+
 import System.IO
 import System.Directory
 import Data.Char
@@ -76,7 +79,7 @@ preguntaCrucial oraculo = do
             return ()
         Left datos -> do
             let msj = ["\nHmm... He encontrado la pregunta crucial de las",
-                       "predicciones que consultaste.\n",
+                       " predicciones que consultaste.\n",
                        "\nLa pregunta crucial es: "]
             mapM_ putStr msj
             putStrLn (datos !! 0)
