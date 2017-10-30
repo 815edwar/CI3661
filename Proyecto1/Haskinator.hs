@@ -97,6 +97,16 @@ preguntaCrucial oraculo = do
             putStrLn ""
             return ()
 
+-- Dados dos String y un oráculo. Busca el ancestro comun mas bajo
+-- de las dos predicciones que representan los String. Devuelve
+-- Left [String] donde en la posición 0 se encuenta la pregunta que
+-- representa el LCA, en la posición 1 se encuentra la opción que 
+-- corresponde al camino que lleva a la primera prediccion que se
+-- paso de entrada y en la posición 2 la opción que corresponde al 
+-- camino que lleva a la segunda predicción que se paso de entrada
+-- en caso de que se haya encontrado el LCA.
+-- Devuelve Right [Bool] si no se encontro alguna predicción, en el
+-- oráculo. En cuyo caso no encuetra el LCA.
 buscarLCA :: String -> String -> Oraculo -> Either [String] [Bool]
 buscarLCA pred1 pred2 (Prediccion ps)
     | ps == pred1 = Right [True, False]
@@ -124,12 +134,17 @@ buscarLCA pred1 pred2 oraculo = do
         _ -> Left (snd . head . fst $ partition)
 
 
+-- Dado un oraculo, si es de tipo Prediccion, le escribe al usuario su prediccion y
+-- pregunta si acerto, en caso afirmativo, celebra. Hace las preguntas necesarias 
+-- para crear la nueva pregunta y retornarla.
+-- Si es de tipo Pregunta, muestra la pregunta y sus opciones al usuario y se va 
+-- ṕor la opcion escogida por el ultimo. Luego de que reciba el oráculo de retorno
+-- Lo pega a la opción y retorna.
 predecir :: Oraculo -> IO Oraculo
 predecir o@(Prediccion ps) = do
     let msj = ["\nEstoy pensando en...",
                ps,
-               "¿Estoy en lo correcto?",
-               "\nSi es así escribe si, de lo contrario escribe no."]
+               "\n¿Estoy en lo correcto? Si es así escribe si, de lo contrario escribe no.\n"]
     mapM_ putStrLn msj
     resp <- getLine
 
@@ -173,9 +188,9 @@ predecir o@(Pregunta qs os) = do
                 nuevoOra = ramificar (listaOp) (predicciones) qs 
             return nuevoOra
         _ -> do 
-            if not (resp `elem` M.keys(opciones (o))) 
+            if not (resp `elem` (M.keys . opciones $ o)) 
                 then do 
-                    putStrLn "\nLo que introduciste no es una opción válida. Vuelve a intentar"
+                    putStrLn "\nLo que introdujiste no es una opción válida. Vuelve a intentar"
                     return o
             else do 
                 nuevoOra <- predecir (respuesta(o) resp)
@@ -184,6 +199,9 @@ predecir o@(Pregunta qs os) = do
                 return oraculoNuevo
 
 
+-- Es una funcion recursiva que solo acaba si se elige la opción 6 del menu
+-- de opciones. Se encarga de presentar el menu y pedir al usuario que escoja
+-- una opción. Una vez elegida, se ejecuta la opción.
 pedirOpcion :: Maybe Oraculo -> IO ()
 pedirOpcion oraculo = do
 
@@ -262,6 +280,7 @@ pedirOpcion oraculo = do
             pedirOpcion oraculo
 
 
+-- Comienza el juego de Haskinator con el loop de main.
 main = do
     putStrLn "¡Bienvenido a Haskinator!\n"
     pedirOpcion Nothing
