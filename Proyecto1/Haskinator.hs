@@ -144,8 +144,7 @@ predecir :: Oraculo -> IO Oraculo
 predecir o@(Prediccion ps) = do
     let msj = ["\nEstoy pensando en...",
                ps,
-               "¿Estoy en lo correcto?",
-               "\nSi es así escribe si, de lo contrario escribe no."]
+               "\n¿Estoy en lo correcto? Si es así escribe si, de lo contrario escribe no.\n"]
     mapM_ putStrLn msj
     resp <- getLine
 
@@ -189,9 +188,9 @@ predecir o@(Pregunta qs os) = do
                 nuevoOra = ramificar (listaOp) (predicciones) qs 
             return nuevoOra
         _ -> do 
-            if not (resp `elem` M.keys(opciones (o))) 
+            if not (resp `elem` (M.keys . opciones $ o)) 
                 then do 
-                    putStrLn "\nLo que introduciste no es una opción válida. Vuelve a intentar"
+                    putStrLn "\nLo que introdujiste no es una opción válida. Vuelve a intentar"
                     return o
             else do 
                 nuevoOra <- predecir (respuesta(o) resp)
