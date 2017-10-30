@@ -70,12 +70,13 @@ preguntaCrucial oraculo = do
     pred2 <- getLine
 
     case buscarLCA pred1 pred2 oraculo of 
-        Right _ -> do
+        Right list -> do
             let msj = ["\nLo siento. Esta consulta no es válida.",
-                       "\nNo tengo conocimiento de alguna de las predicciones.",
+                       "\nNo tengo conocimiento de que es ",
+                       if list == [True, False] then pred2 else pred1,
                        "\nQuiza deberias seguir jugando para aprender mas sobre",
-                       "las cosas que conoces. \n"]
-            mapM_ putStrLn msj
+                       " las cosas que conoces. \n\n"]
+            mapM_ putStr msj
             return ()
         Left datos -> do
             let msj = ["\nHmm... He encontrado la pregunta crucial de las",
